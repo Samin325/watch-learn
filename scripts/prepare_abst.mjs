@@ -184,6 +184,7 @@ function chunkPages(pages) {
   let buffer = [];
   let bufferWords = 0;
   let bufferPage = 1;
+  let lastLineBlank = false;
 
   for (const { page, text } of pages) {
     if (!text || text === "[IMAGE PAGE]" || text === "[EXTRACTION FAILED]") continue;
@@ -192,10 +193,15 @@ function chunkPages(pages) {
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed) continue;
 
-      // Detect headings (## prefixed by our extraction prompt)
-      if (trimmed.startsWith("## ")) {
+      // Preserve blank lines as paragraph breaks in the output
+      if (!trimmed) {
+        lastLineBlank = true;
+        continue;
+      }
+
+      // Detect headings — use as section label AND keep in chunk text
+      if (trimmed.startsWith("## ") || trimmed.startsWith("##")) {
         const heading = trimmed.replace(/^#+\s*/, "").trim();
         if (heading.length > 0 && heading.length < 120) {
           if (buffer.length > 0) {
@@ -205,8 +211,14 @@ function chunkPages(pages) {
           }
           currentSection = heading;
           bufferPage = page;
-          continue;
+          lastLineBlank = false;
         }
+        // Keep the heading in the buffer so it renders in the text
+        if (buffer.length === 0) bufferPage = page;
+        buffer.push(trimmed);
+        bufferWords += trimmed.split(/\s+/).length;
+        lastLineBlank = false;
+        continue;
       }
 
       const wordCount = trimmed.split(/\s+/).length;
@@ -216,11 +228,19 @@ function chunkPages(pages) {
         buffer = [];
         bufferWords = 0;
         bufferPage = page;
+        lastLineBlank = false;
       }
 
       if (buffer.length === 0) bufferPage = page;
+
+      // Insert a blank line before this line if there was a paragraph break
+      if (lastLineBlank && buffer.length > 0) {
+        buffer.push("");
+      }
+
       buffer.push(trimmed);
       bufferWords += wordCount;
+      lastLineBlank = false;
 
       if (bufferWords >= TARGET_WORDS) {
         chunks.push(makeChunk(buffer, currentSection, bufferPage));

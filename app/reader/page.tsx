@@ -104,6 +104,7 @@ export default function ReaderPage() {
     );
     setSectionChunks(matched.length > 0 ? matched : chunks.filter((c) => c.page === activePage));
     setDensityTexts({});
+    if (!useOriginal) setRewriting(true);
     contentRef.current?.scrollTo(0, 0);
   }, [activePage, activeTitle, chunks]);
 
@@ -114,10 +115,12 @@ export default function ReaderPage() {
       const map: Record<string, string> = {};
       sectionChunks.forEach((c) => (map[c.id] = c.text));
       setDensityTexts(map);
+      setRewriting(false);
       return;
     }
+    setRewriting(true);
+    setDensityTexts({});
     const timer = setTimeout(() => {
-      setRewriting(true);
       Promise.all(
         sectionChunks.map((c) =>
           fetch("/api/density", {
@@ -127,6 +130,7 @@ export default function ReaderPage() {
           })
             .then((r) => r.json())
             .then((d) => ({ id: c.id, text: d.text ?? c.text }))
+            .catch(() => ({ id: c.id, text: c.text }))
         )
       ).then((results) => {
         const map: Record<string, string> = {};
@@ -322,8 +326,15 @@ export default function ReaderPage() {
           {/* Content */}
           <div className="px-8 md:px-10 py-8">
             {rewriting ? (
-              <div className="text-slate italic py-12 text-center">
-                Rewriting {sectionChunks.length} section{sectionChunks.length !== 1 ? "s" : ""} at CLB {clbLevel}…
+              <div className="py-16 flex flex-col items-center gap-4">
+                <div className="flex gap-1.5">
+                  <span className="w-2.5 h-2.5 bg-ink/30 rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-2.5 h-2.5 bg-ink/30 rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-2.5 h-2.5 bg-ink/30 rounded-full animate-bounce [animation-delay:300ms]" />
+                </div>
+                <div className="text-sm text-slate font-mono">
+                  Rewriting {sectionChunks.length} chunk{sectionChunks.length !== 1 ? "s" : ""} at CLB {clbLevel}
+                </div>
               </div>
             ) : sectionChunks.length === 0 ? (
               <div className="text-slate italic py-12 text-center">
@@ -332,7 +343,18 @@ export default function ReaderPage() {
             ) : (
               <div className="space-y-8">
                 {sectionChunks.map((chunk) => {
-                  const text = densityTexts[chunk.id] ?? chunk.text;
+                  const text = densityTexts[chunk.id];
+                  if (!text) {
+                    return (
+                      <div key={chunk.id} className="space-y-3 animate-pulse">
+                        <div className="h-4 bg-ink/10 rounded w-full" />
+                        <div className="h-4 bg-ink/10 rounded w-5/6" />
+                        <div className="h-4 bg-ink/10 rounded w-4/6" />
+                        <div className="h-4 bg-ink/10 rounded w-full" />
+                        <div className="h-4 bg-ink/10 rounded w-3/6" />
+                      </div>
+                    );
+                  }
                   return (
                     <div key={chunk.id} className="group">
                       <div className="prose prose-sm md:prose-base max-w-none text-base md:text-lg leading-relaxed">
