@@ -250,6 +250,12 @@ function demoText(messages: ChatMessage[]): string {
   if (sys.includes("DENSITY")) {
     const clbMatch = last.match(/clb=(\d+)/);
     const clb = clbMatch ? Number(clbMatch[1]) : 12;
+    if (clb <= 2) {
+      return "- Guard = person who watches.\n- Guard looks. Guard writes. Guard tells.\n- Guard is not police.";
+    }
+    if (clb <= 4) {
+      return "A security guard watches a place. The guard writes what happens. The guard tells other people. A guard is not a police officer.";
+    }
     if (clb <= 6) {
       return "Security guards watch. They write things down. They tell other people. They are not police.";
     }
