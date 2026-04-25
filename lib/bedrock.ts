@@ -32,8 +32,10 @@ export async function chatCompletion(
   const systemMessages = messages.filter((m) => m.role === "system");
   const conversationMessages = messages.filter((m) => m.role !== "system");
 
+  const modelId = opts.model ?? TEXT_MODEL;
+
   const cmd = new ConverseCommand({
-    modelId: opts.model ?? TEXT_MODEL,
+    modelId,
     system: systemMessages.length > 0 ? systemMessages.map((m) => ({ text: m.content })) : undefined,
     messages: conversationMessages.map((m) => ({
       role: m.role as "user" | "assistant",
