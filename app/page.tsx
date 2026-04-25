@@ -74,9 +74,9 @@ export default function Home() {
         />
         <PillarCard
           delay="rise-5"
-          eyebrow="Pillar V"
+          eyebrow="Pillar VI"
           title="Full Practice Exam"
-          subtitle="Test your readiness with a randomized 50-question practice test. See your score and review explanations."
+          subtitle="Test your readiness with a randomized 50-question practice test. See your score and review explanations at the end."
           href="/practice-test"
           cta="Start full exam →"
         />

@@ -21,15 +21,13 @@ export default function PracticeTestPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "active" | "results">("idle");
-  const [mode, setMode] = useState<"50" | "all">("50");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({}); 
-  const [isAnswerChecked, setIsAnswerChecked] = useState(false);
 
-  async function fetchQuestions(limit: '50' | 'all') {
+  async function fetchQuestions() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/practice-test?limit=${limit}`);
+      const res = await fetch(`/api/practice-test?limit=50`);
       const data: APIResponse = await res.json();
       if (data.success && data.questions) {
         setQuestions(data.questions);
@@ -44,31 +42,20 @@ export default function PracticeTestPage() {
     }
   }
 
-  function startTest(limit: '50' | 'all') {
-    setMode(limit);
-    fetchQuestions(limit);
+  function startTest() {
+    fetchQuestions();
     setStatus("active");
     setCurrentIndex(0);
     setUserAnswers({});
-    setIsAnswerChecked(false);
   }
 
   function handleOptionSelect(option: string) {
-    if (isAnswerChecked) return;
     setUserAnswers((prev) => ({ ...prev, [currentIndex]: option }));
   }
 
-  function handleActionClick() {
-    // In "all" mode, first click checks the answer
-    if (mode === "all" && !isAnswerChecked) {
-      setIsAnswerChecked(true);
-      return;
-    }
-
-    // Move to next or results
+  function handleNext() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
-      setIsAnswerChecked(false);
     } else {
       setStatus("results");
     }
@@ -78,30 +65,21 @@ export default function PracticeTestPage() {
   if (status === "idle") {
     return (
       <div className="max-w-3xl mx-auto px-6 pt-10 pb-20 text-center">
-        <div className="eyebrow mb-2">Pillar V · Practice Exam</div>
+        <div className="eyebrow mb-2">Pillar V · Full Practice Exam</div>
         <h1 className="font-display text-4xl md:text-5xl leading-tight mb-8">
-          Practice Test
+          50-Question Mock Exam
         </h1>
         <p className="text-lg text-ink/80 mb-10 max-w-xl mx-auto">
-          Test your knowledge with randomized questions from across all modules. 
-          You need an 80% to pass.
+          Test your knowledge with 50 randomized questions from across all modules. 
+          You need an 80% (40 out of 50) to pass.
         </p>
-        <div className="flex flex-col md:flex-row justify-center gap-4">
-          <button
-            onClick={() => startTest('50')}
-            disabled={loading}
-            className="bg-ink text-paper px-8 py-4 disabled:opacity-30 hover:bg-accent transition text-lg"
-          >
-            {loading ? "Loading..." : "50-Question Exam"}
-          </button>
-          <button
-            onClick={() => startTest('all')}
-            disabled={loading}
-            className="border border-ink bg-paper text-ink px-8 py-4 disabled:opacity-30 hover:bg-ink/5 transition text-lg"
-          >
-            {loading ? "Loading..." : "Full Bank (Study Mode)"}
-          </button>
-        </div>
+        <button
+          onClick={startTest}
+          disabled={loading}
+          className="bg-ink text-paper px-8 py-4 disabled:opacity-30 hover:bg-accent transition text-lg w-full md:w-auto"
+        >
+          {loading ? "Loading Questions..." : "Start 50-Question Exam"}
+        </button>
       </div>
     );
   }
@@ -111,7 +89,7 @@ export default function PracticeTestPage() {
     if (loading || questions.length === 0) {
       return (
         <div className="max-w-3xl mx-auto px-6 pt-20 text-center text-slate">
-          Preparing your practice test...
+          Preparing your practice exam...
         </div>
       );
     }
@@ -119,13 +97,6 @@ export default function PracticeTestPage() {
     const currentQ = questions[currentIndex];
     const selectedOption = userAnswers[currentIndex];
     const progress = Math.round(((currentIndex) / questions.length) * 100);
-
-    let buttonText = "Next Question";
-    if (mode === "all" && !isAnswerChecked) {
-      buttonText = "Check Answer";
-    } else if (currentIndex === questions.length - 1) {
-      buttonText = mode === "50" ? "Submit Exam" : "Finish Review";
-    }
 
     return (
       <div className="max-w-3xl mx-auto px-6 pt-10 pb-20">
@@ -148,56 +119,31 @@ export default function PracticeTestPage() {
           </h2>
 
           <div className="space-y-3 mb-8">
-            {currentQ.options.map((opt, i) => {
-              let btnClass = "border-hair hover:border-ink";
-              
-              if (isAnswerChecked) {
-                if (opt === currentQ.correctAnswer) {
-                  // Correct answer is green
-                  btnClass = "border-green-600 bg-green-50 text-green-900 font-medium";
-                } else if (opt === selectedOption && opt !== currentQ.correctAnswer) {
-                  // Incorrect user choice is red
-                  btnClass = "border-red-500 bg-red-50 text-red-900";
-                } else {
-                  // Unselected options are muted
-                  btnClass = "border-hair opacity-50";
-                }
-              } else if (selectedOption === opt) {
-                btnClass = "border-ink bg-ink text-paper";
-              }
-
-              return (
-                <button
-                  key={i}
-                  disabled={isAnswerChecked}
-                  onClick={() => handleOptionSelect(opt)}
-                  className={`w-full text-left p-4 border transition ${btnClass}`}
-                >
-                  <span className={`font-mono text-xs mr-4 ${selectedOption === opt && !isAnswerChecked ? "opacity-60" : "opacity-50"}`}>
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                  {opt}
-                </button>
-              );
-            })}
+            {currentQ.options.map((opt, i) => (
+              <button
+                key={i}
+                onClick={() => handleOptionSelect(opt)}
+                className={`w-full text-left p-4 border transition ${
+                  selectedOption === opt
+                    ? "border-ink bg-ink text-paper"
+                    : "border-hair hover:border-ink"
+                }`}
+              >
+                <span className={`font-mono text-xs mr-4 ${selectedOption === opt ? "opacity-60" : "opacity-50"}`}>
+                  {String.fromCharCode(65 + i)}
+                </span>
+                {opt}
+              </button>
+            ))}
           </div>
-
-          {isAnswerChecked && (
-            <div className="mb-8 p-5 bg-ink/5 border border-hair rounded">
-              <div className="eyebrow mb-2">Explanation</div>
-              <p className="text-sm text-ink/90 leading-relaxed">
-                {currentQ.explanation}
-              </p>
-            </div>
-          )}
 
           <div className="flex justify-end">
             <button
-              onClick={handleActionClick}
+              onClick={handleNext}
               disabled={!selectedOption}
               className="bg-ink text-paper px-6 py-3 disabled:opacity-30 hover:bg-accent transition"
             >
-              {buttonText}
+              {currentIndex === questions.length - 1 ? "Submit Exam" : "Next Question"}
             </button>
           </div>
         </div>
@@ -226,7 +172,7 @@ export default function PracticeTestPage() {
     return (
       <div className="max-w-4xl mx-auto px-6 pt-10 pb-20">
         <div className="text-center mb-12">
-          <div className="eyebrow mb-2">{mode === "all" ? "Study Review Complete" : "Exam Results"}</div>
+          <div className="eyebrow mb-2">Exam Results</div>
           <h1 className={`font-display text-5xl md:text-7xl leading-tight mb-4 ${isPass ? 'text-gold' : 'text-accent'}`}>
             {isPass ? "You Passed!" : "Not quite there"}
           </h1>
@@ -241,11 +187,10 @@ export default function PracticeTestPage() {
               onClick={() => {
                 setStatus("idle");
                 setQuestions([]);
-                setIsAnswerChecked(false);
               }}
               className="bg-ink text-paper px-6 py-3 hover:bg-accent transition mr-4"
             >
-              Back to Start
+              Take Another Practice Test
             </button>
             <Link
               href="/"
@@ -256,7 +201,7 @@ export default function PracticeTestPage() {
           </div>
         </div>
 
-        {incorrectIndices.length > 0 && mode === "50" && (
+        {incorrectIndices.length > 0 && (
           <div className="border border-hair p-6 md:p-8 bg-paper">
             <h2 className="font-display text-2xl mb-8 border-b border-hair pb-4">
               Review Incorrect Answers ({incorrectIndices.length})
