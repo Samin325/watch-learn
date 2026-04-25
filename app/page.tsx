@@ -33,7 +33,7 @@ export default function Home() {
       <section className="grid md:grid-cols-2 gap-px bg-ink/10 border border-hair">
         <PillarCard
           delay="rise-1"
-          eyebrow="Pillar I — Hero"
+          eyebrow="Pillar I"
           title="Scenario Simulator"
           subtitle="Voice-driven roleplay. The exam tests judgment under pressure — practice that, not flashcards."
           href="/scenario"
