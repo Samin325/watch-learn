@@ -202,10 +202,15 @@ function demoText(messages: ChatMessage[]): string {
     });
   }
   if (sys.includes("DENSITY")) {
-    if (last.includes("level=simple")) {
+    const clbMatch = last.match(/clb=(\d+)/);
+    const clb = clbMatch ? Number(clbMatch[1]) : 12;
+    if (clb <= 6) {
+      return "Security guards watch. They write things down. They tell other people. They are not police.";
+    }
+    if (clb <= 9) {
       return "Security guards watch, write things down, and tell others. They do not have police powers.";
     }
-    return "A security guard's role is observe, deter, and report. Guards have no special legal powers beyond those of any private citizen.";
+    return "A security guard's primary role is to observe, deter, and report. Guards have no special legal powers beyond those of any private citizen.";
   }
 
   return "(demo mode) " + last.slice(0, 120);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 
 type Chunk = {
   id: string;
@@ -17,18 +18,25 @@ type SpeechMark = {
   value: string;
 };
 
-type Density = "original" | "simple" | "eli12";
+const CLB_MIN = 5;
+const CLB_MAX = 12;
 
-const DENSITY_DESCRIPTIONS: Record<Density, string> = {
-  original: "Manual text as written.",
-  simple: "Same content, B1 English. Short sentences, common words. Legal terms preserved.",
-  eli12: "Plain explanation with analogies. Use this to build intuition, then come back to the manual.",
+const CLB_DESCRIPTIONS: Record<number, string> = {
+  5: "Initial Intermediate — simple words, short sentences, analogies.",
+  6: "Developing Intermediate — everyday words, all terms defined.",
+  7: "Adequate Intermediate — short sentences, legal terms glossed.",
+  8: "Fluent Intermediate — clear language, technical terms defined inline.",
+  9: "Initial Advanced — shorter sentences, low-frequency idioms replaced.",
+  10: "Developing Advanced — light simplification, all terminology kept.",
+  11: "Adequate Advanced — minimal simplification, dense sentences reduced.",
+  12: "Fluent Advanced — original manual text, no changes.",
 };
 
 export default function ReaderPage() {
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [density, setDensity] = useState<Density>("original");
+  const [useOriginal, setUseOriginal] = useState(true);
+  const [clbLevel, setClbLevel] = useState<number>(8);
   const [densityText, setDensityText] = useState<string>("");
   const [rewriting, setRewriting] = useState(false);
   const [activeSentence, setActiveSentence] = useState<number | null>(null);
@@ -44,23 +52,25 @@ export default function ReaderPage() {
 
   const active = chunks[activeIdx];
 
-  // Re-render at the requested density whenever the active chunk or density changes.
   useEffect(() => {
     if (!active) return;
-    if (density === "original") {
+    if (useOriginal) {
       setDensityText(active.text);
       return;
     }
-    setRewriting(true);
-    fetch("/api/density", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: active.text, level: density }),
-    })
-      .then((r) => r.json())
-      .then((d) => setDensityText(d.text ?? active.text))
-      .finally(() => setRewriting(false));
-  }, [active, density]);
+    const timer = setTimeout(() => {
+      setRewriting(true);
+      fetch("/api/density", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: active.text, clb: clbLevel }),
+      })
+        .then((r) => r.json())
+        .then((d) => setDensityText(d.text ?? active.text))
+        .finally(() => setRewriting(false));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [active, useOriginal, clbLevel]);
 
   async function readAloud() {
     if (!active || !densityText) return;
@@ -104,13 +114,18 @@ export default function ReaderPage() {
             </span>
           </h1>
           <p className="mt-3 text-sm text-ink/70 max-w-md">
-            The provincial exam is in English, so the manual is in English. But
-            you can read it at three different reading levels — and have it
-            read aloud while sentences highlight.
+            The provincial exam is in English, so the manual is in English. Slide
+            the CLB level to match your reading comfort — and have it read aloud
+            while sentences highlight.
           </p>
         </div>
 
-        <DensitySlider value={density} onChange={setDensity} />
+        <ClbSlider
+          value={clbLevel}
+          onChange={setClbLevel}
+          useOriginal={useOriginal}
+          onToggleOriginal={setUseOriginal}
+        />
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6">
@@ -149,7 +164,9 @@ export default function ReaderPage() {
                 {active?.section ?? "—"}
               </h2>
               <div className="text-[10px] font-mono text-slate uppercase tracking-wider">
-                Reading level: {density} · {DENSITY_DESCRIPTIONS[density]}
+                {useOriginal
+                  ? "Original manual text"
+                  : `CLB ${clbLevel} · ${CLB_DESCRIPTIONS[clbLevel]}`}
               </div>
             </div>
             <button
@@ -164,10 +181,10 @@ export default function ReaderPage() {
             </button>
           </div>
 
-          <div className="text-base md:text-lg leading-relaxed mt-6 max-w-3xl">
+          <div className="text-base md:text-lg leading-relaxed mt-6 max-w-3xl prose prose-sm md:prose-base max-w-none">
             {rewriting ? (
-              <span className="text-slate italic">Rewriting at {density} level…</span>
-            ) : (
+              <span className="text-slate italic">Rewriting at CLB {clbLevel}…</span>
+            ) : activeSentence !== null ? (
               sentences.map((s, i) => (
                 <span
                   key={i}
@@ -176,6 +193,8 @@ export default function ReaderPage() {
                   {s}{" "}
                 </span>
               ))
+            ) : (
+              <ReactMarkdown>{densityText}</ReactMarkdown>
             )}
           </div>
         </article>
@@ -188,33 +207,50 @@ function splitSentences(text: string): string[] {
   return text.match(/[^.!?]+[.!?]+|\S+$/g) ?? [text];
 }
 
-function DensitySlider({
+function ClbSlider({
   value,
   onChange,
+  useOriginal,
+  onToggleOriginal,
 }: {
-  value: Density;
-  onChange: (d: Density) => void;
+  value: number;
+  onChange: (level: number) => void;
+  useOriginal: boolean;
+  onToggleOriginal: (v: boolean) => void;
 }) {
-  const levels: { id: Density; label: string }[] = [
-    { id: "original", label: "Manual" },
-    { id: "simple", label: "Simple" },
-    { id: "eli12", label: "Like I'm 12" },
-  ];
   return (
-    <div className="flex flex-col gap-1">
-      <span className="eyebrow text-[10px]">Reading level</span>
-      <div className="inline-flex border border-hair">
-        {levels.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => onChange(l.id)}
-            className={`px-3 py-2 text-sm font-mono transition ${
-              value === l.id ? "bg-ink text-paper" : "hover:bg-ink/5"
-            }`}
-          >
-            {l.label}
-          </button>
-        ))}
+    <div className="flex flex-col gap-2 min-w-[220px]">
+      <button
+        onClick={() => onToggleOriginal(!useOriginal)}
+        className={`px-3 py-2 text-sm font-mono border transition ${
+          useOriginal
+            ? "bg-ink text-paper border-ink"
+            : "border-hair hover:bg-ink/5"
+        }`}
+      >
+        Original (Manual)
+      </button>
+      <div className={useOriginal ? "opacity-30 pointer-events-none" : ""}>
+        <div className="flex items-baseline justify-between mb-1">
+          <span className="eyebrow text-[10px]">CLB Level</span>
+          <span className="font-mono text-sm font-medium">{value}</span>
+        </div>
+        <input
+          type="range"
+          min={CLB_MIN}
+          max={CLB_MAX}
+          step={1}
+          value={value}
+          onChange={(e) => {
+            onToggleOriginal(false);
+            onChange(Number(e.target.value));
+          }}
+          className="w-full accent-ink cursor-pointer"
+        />
+        <div className="flex justify-between text-[10px] font-mono text-slate">
+          <span>CLB {CLB_MIN}</span>
+          <span>CLB {CLB_MAX}</span>
+        </div>
       </div>
     </div>
   );

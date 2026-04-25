@@ -80,14 +80,28 @@ Diagnosis guide:
 
 Be encouraging. ESL students are often demoralized; never sound condescending.`;
 
-export const DENSITY_REWRITE = `[DENSITY]
-You are rewriting an excerpt from the Alberta Basic Security Training Participant Manual at one of three reading levels for an ESL student.
+export const CLB_REWRITE = `[DENSITY]
+You are rewriting an excerpt from the Alberta Basic Security Training Participant Manual at a specific Canadian Language Benchmarks (CLB) level for an ESL student.
 
-The user message will end with a tag like "level=original" | "level=simple" | "level=eli12".
+The user message will end with a tag like "clb=5" through "clb=12".
 
-- original: return the excerpt unchanged.
-- simple: rewrite at roughly B1 English level (CEFR). Short sentences, common words, no idioms. Preserve every legal/security term verbatim — do not translate "trespass" to "go where you shouldn't".
-- eli12: explain like the reader is 12 years old. Use analogies. You may drop legal jargon and say "the rule means..." instead of quoting the statute.
+Rewrite the excerpt to match the target CLB reading level. Use the CLB reading descriptors below to calibrate complexity.
+
+- clb=12: Return the excerpt unchanged. The reader has fluent advanced ability — can interpret idiomatic and figurative language, colloquialisms, cultural references, and abstract or specialized vocabulary from demanding texts.
+
+- clb=11: Minimal simplification. The reader understands extremely lengthy, dense text with sophisticated reasoning and implicit subtleties, highly idiomatic and figurative language. Reduce only the most convoluted compound-complex sentences. Keep all terminology, idioms, and cultural references intact.
+
+- clb=10: Light simplification. The reader can usually understand linguistically complex text without a dictionary and can interpret the author's intent, mood and point of view. Split overly dense sentences. Keep all domain terminology. You may lightly rephrase low-frequency idioms but preserve figurative language the reader can infer from context.
+
+- clb=9: Moderate simplification. The reader has initial advanced ability — can handle demanding, lengthy, dense text with idiomatic language, but finds difficulty with low-frequency idioms, cultural references, and figures of speech. Use shorter sentences. Replace low-frequency idioms with plain equivalents. Preserve all legal/security terms verbatim but briefly gloss unfamiliar ones in parentheses on first use.
+
+- clb=8: Clear simplification. The reader often guesses unknown terms from context and overall meaning. Use an expanded but natural range of vocabulary. Define technical and legal terms inline on first use. Avoid dense noun phrases. Keep sentences moderately complex but clear. Some idiomatic language is fine if common.
+
+- clb=7: Strong simplification. The reader can understand factual, descriptive or argumentative language with concrete and some abstract vocabulary and some idioms, but uses a dictionary to confirm unknown terms. Use short, direct sentences. Stick to common everyday vocabulary. Preserve every legal/security term verbatim — do not translate "trespass" to "go where you shouldn't" — but add a brief plain-language gloss after each on first use.
+
+- clb=6: Heavy simplification. The reader can handle moderately complex texts in predictable situations but may require visual clues and re-reading. Comprehension relies on a developing understanding of complex sentences. Use very short sentences with simple connective words. Use everyday vocabulary. Define all legal and technical terms explicitly. Avoid idioms, cultural references, and figurative language entirely.
+
+- clb=5: Maximum simplification. The reader can understand predictable, practical, concrete and factual text but often rereads and needs clarification. May still require a bilingual dictionary. Use simple present tense where possible. Use basic, high-frequency words. One idea per sentence. Analogies to everyday life are encouraged to build intuition. Define every technical term in the simplest possible way.
 
 Return only the rewritten text. No preamble, no commentary.`;
 
